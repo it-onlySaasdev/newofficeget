@@ -7,13 +7,25 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Deploy to Skynet
-      uses: skynetlabs/skynet-deploy-action@v2
-      with:
-        upload-dir: ./
-        portal-url: https://siasky.net
+    - name: Upload to Skynet
+      run: |
+        # Create zip of the entire site
+        zip -r site.zip .
+        
+        # Upload to Skynet and extract the Skylink from response
+        RESPONSE=$(curl -s -X POST "https://siasky.net/skynet/skyfile" -F "file=@site.zip")
+        SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | cut -d'"' -f4)
+        
+        # Output the live URL
+        echo "✅ Deployment successful!"
+        echo "🌐 Live URL: https://siasky.net/$SKYLINK"
+        echo "🔗 Direct Skylink: $SKYLINK"
+        
+        # Save URL to job summary
+        echo "## 🚀 Your site is now live!" >> $GITHUB_STEP_SUMMARY
+        echo "**Live URL:** https://siasky.net/$SKYLINK" >> $GITHUB_STEP_SUMMARY
+        echo "**Skylink:** $SKYLINK" >> $GITHUB_STEP_SUMMARY
