@@ -11,39 +11,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Upload to Skynet via Node.js
+    - name: Upload using npx
       run: |
-        # Install skynet-js and upload directly
-        echo "Installing Skynet SDK..."
-        npm install --no-save skynet-js
-        
-        # Create upload script with CORRECT syntax
-        cat > upload.js << 'EOF'
-        const { SkynetClient } = require('skynet-js');
-        const fs = require('fs');
-        const path = require('path');
-        
-        const client = new SkynetClient("https://siasky.net");
-        
-        async function uploadDirectory() {
-          try {
-            console.log('Uploading directory to Skynet...');
-            
-            // CORRECT SYNTAX: Upload the entire current directory
-            const skylink = await client.uploadDirectory("./");
-            
-            console.log('✅ Upload successful!');
-            console.log('🌐 Live URL: https://siasky.net/' + skylink);
-            console.log('🔗 Skylink: ' + skylink);
-            
-          } catch (error) {
-            console.error('❌ Upload failed:', error);
-            process.exit(1);
-          }
-        }
-        
-        uploadDirectory();
-        EOF
-        
-        # Run the upload script
-        node upload.js
+        # Upload directly using npx
+        npx @nebulous/skynet upload . --portal https://siasky.net
