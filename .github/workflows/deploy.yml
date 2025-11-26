@@ -16,11 +16,20 @@ jobs:
         # Create zip of the entire site
         zip -r site.zip .
         
-        # Upload to Skynet and extract the Skylink from response
+        # Upload to Skynet and get FULL response
+        echo "Uploading to Skynet..."
         RESPONSE=$(curl -s -X POST "https://siasky.net/skynet/skyfile" -F "file=@site.zip")
+        echo "Full Response: $RESPONSE"
+        
+        # Extract skylink using multiple methods
         SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | cut -d'"' -f4)
         
-        # Output the live URL
+        # If first method failed, try alternative method
+        if [ -z "$SKYLINK" ]; then
+          SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | head -1 | sed 's/"skylink":"//' | sed 's/"//')
+        fi
+        
+        # Output results
         echo "✅ Deployment successful!"
         echo "🌐 Live URL: https://siasky.net/$SKYLINK"
         echo "🔗 Direct Skylink: $SKYLINK"
@@ -29,3 +38,9 @@ jobs:
         echo "## 🚀 Your site is now live!" >> $GITHUB_STEP_SUMMARY
         echo "**Live URL:** https://siasky.net/$SKYLINK" >> $GITHUB_STEP_SUMMARY
         echo "**Skylink:** $SKYLINK" >> $GITHUB_STEP_SUMMARY
+        
+        # If still no skylink, show full response for debugging
+        if [ -z "$SKYLINK" ]; then
+          echo "❌ Could not extract Skylink. Full response:"
+          echo "$RESPONSE"
+        fi
