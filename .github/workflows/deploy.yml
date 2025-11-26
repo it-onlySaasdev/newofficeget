@@ -13,34 +13,33 @@ jobs:
       
     - name: Upload to Skynet
       run: |
-        # Create zip of the entire site
-        zip -r site.zip .
+        # Create zip of the entire site (excluding .git folder)
+        zip -r site.zip . -x "*.git*" "*.github*"
         
-        # Upload to Skynet and get FULL response
+        # Upload to Skynet using the correct API endpoint
         echo "Uploading to Skynet..."
         RESPONSE=$(curl -s -X POST "https://siasky.net/skynet/skyfile" -F "file=@site.zip")
-        echo "Full Response: $RESPONSE"
+        echo "Raw Response: $RESPONSE"
         
-        # Extract skylink using multiple methods
+        # Try to extract skylink from JSON response
         SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | cut -d'"' -f4)
         
-        # If first method failed, try alternative method
+        # If no skylink found, try alternative extraction
         if [ -z "$SKYLINK" ]; then
-          SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | head -1 | sed 's/"skylink":"//' | sed 's/"//')
+          SKYLINK=$(echo $RESPONSE | grep -o 'skylink[^,]*' | cut -d'"' -f3)
         fi
         
         # Output results
-        echo "✅ Deployment successful!"
-        echo "🌐 Live URL: https://siasky.net/$SKYLINK"
-        echo "🔗 Direct Skylink: $SKYLINK"
-        
-        # Save URL to job summary
-        echo "## 🚀 Your site is now live!" >> $GITHUB_STEP_SUMMARY
-        echo "**Live URL:** https://siasky.net/$SKYLINK" >> $GITHUB_STEP_SUMMARY
-        echo "**Skylink:** $SKYLINK" >> $GITHUB_STEP_SUMMARY
-        
-        # If still no skylink, show full response for debugging
-        if [ -z "$SKYLINK" ]; then
-          echo "❌ Could not extract Skylink. Full response:"
+        if [ -n "$SKYLINK" ]; then
+          echo "✅ Deployment successful!"
+          echo "🌐 Live URL: https://siasky.net/$SKYLINK"
+          echo "🔗 Direct Skylink: $SKYLINK"
+          
+          # Save URL to job summary
+          echo "## 🚀 Your site is now live!" >> $GITHUB_STEP_SUMMARY
+          echo "**Live URL:** https://siasky.net/$SKYLINK" >> $GITHUB_STEP_SUMMARY
+          echo "**Skylink:** $SKYLINK" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Deployment failed. Response:"
           echo "$RESPONSE"
         fi
