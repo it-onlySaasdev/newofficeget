@@ -13,7 +13,7 @@ jobs:
       uses: actions/checkout@v3
       
     - name: Deploy to Skynet
-      uses: skynetlabs/deploy-action@v2
+      uses: SkynetLabs/deploy-action@v2
       with:
         upload-dir: ./
         portal-url: https://siasky.net
