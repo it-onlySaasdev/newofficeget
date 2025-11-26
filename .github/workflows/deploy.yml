@@ -11,35 +11,42 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Upload to Skynet
+    - name: Upload to Skynet via Node.js
       run: |
-        # Create zip of the entire site (excluding .git folder)
-        zip -r site.zip . -x "*.git*" "*.github*"
+        # Install skynet-js and upload directly
+        echo "Installing Skynet SDK..."
+        npm install --no-save skynet-js
         
-        # Upload to Skynet using the correct API endpoint
-        echo "Uploading to Skynet..."
-        RESPONSE=$(curl -s -X POST "https://siasky.net/skynet/skyfile" -F "file=@site.zip")
-        echo "Raw Response: $RESPONSE"
+        # Create upload script
+        cat > upload.js << 'EOF'
+        const { SkynetClient } = require('skynet-js');
+        const fs = require('fs');
+        const path = require('path');
         
-        # Try to extract skylink from JSON response
-        SKYLINK=$(echo $RESPONSE | grep -o '"skylink":"[^"]*"' | cut -d'"' -f4)
+        const client = new SkynetClient("https://siasky.net");
         
-        # If no skylink found, try alternative extraction
-        if [ -z "$SKYLINK" ]; then
-          SKYLINK=$(echo $RESPONSE | grep -o 'skylink[^,]*' | cut -d'"' -f3)
-        fi
+        async function uploadDirectory() {
+          try {
+            console.log('Uploading directory to Skynet...');
+            
+            // Upload the entire current directory
+            const { skylink } = await client.uploadDirectory("./", "./");
+            
+            console.log('✅ Upload successful!');
+            console.log('🌐 Live URL: https://siasky.net/' + skylink);
+            console.log('🔗 Skylink: ' + skylink);
+            
+            // Set output for workflow
+            console.log(`::set-output name=skylink::${skylink}`);
+            
+          } catch (error) {
+            console.error('❌ Upload failed:', error);
+            process.exit(1);
+          }
+        }
         
-        # Output results
-        if [ -n "$SKYLINK" ]; then
-          echo "✅ Deployment successful!"
-          echo "🌐 Live URL: https://siasky.net/$SKYLINK"
-          echo "🔗 Direct Skylink: $SKYLINK"
-          
-          # Save URL to job summary
-          echo "## 🚀 Your site is now live!" >> $GITHUB_STEP_SUMMARY
-          echo "**Live URL:** https://siasky.net/$SKYLINK" >> $GITHUB_STEP_SUMMARY
-          echo "**Skylink:** $SKYLINK" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Deployment failed. Response:"
-          echo "$RESPONSE"
-        fi
+        uploadDirectory();
+        EOF
+        
+        # Run the upload script
+        node upload.js
