@@ -17,7 +17,7 @@ jobs:
         echo "Installing Skynet SDK..."
         npm install --no-save skynet-js
         
-        # Create upload script
+        # Create upload script with CORRECT syntax
         cat > upload.js << 'EOF'
         const { SkynetClient } = require('skynet-js');
         const fs = require('fs');
@@ -29,15 +29,12 @@ jobs:
           try {
             console.log('Uploading directory to Skynet...');
             
-            // Upload the entire current directory
-            const { skylink } = await client.uploadDirectory("./", "./");
+            // CORRECT SYNTAX: Upload the entire current directory
+            const skylink = await client.uploadDirectory("./");
             
             console.log('✅ Upload successful!');
             console.log('🌐 Live URL: https://siasky.net/' + skylink);
             console.log('🔗 Skylink: ' + skylink);
-            
-            // Set output for workflow
-            console.log(`::set-output name=skylink::${skylink}`);
             
           } catch (error) {
             console.error('❌ Upload failed:', error);
